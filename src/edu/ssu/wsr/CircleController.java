@@ -26,15 +26,14 @@ public class CircleController extends JFrame implements ActionListener
     /*
     Work Log
 
-    Thursday (17th) : 3pm to 5pm
-    Sunday (20th) : 1pm to 2pm
+    Tuesday 29th 6:15 to 6:30
      */
 
     private Server server;
     private JButton up, left, right, down;
     private JTextField amountField;
 
-    public CircleController()
+    private CircleController()
     {
         super("Circle Controller : Keith Webb");
         System.out.println("Creating Server");

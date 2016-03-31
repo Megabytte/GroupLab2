@@ -9,45 +9,67 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.HashSet;
 
 /**
  * Copyright © 2016 Keith Webb
  */
 
-/*
-Input : Software Signals
-Output : Player Changes
- */
-
-public class Server extends WebSocketServer
+class Server extends WebSocketServer
 {
-    public Server() throws UnknownHostException
+    private WebSocket webGLServer;
+    private HashSet<WebSocket> clients;
+
+    Server() throws UnknownHostException
     {
         super(new InetSocketAddress(8080));
+        clients = new HashSet<>();
     }
 
     @Override
     public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake)
     {
+        if(webGLServer == null)
+            webGLServer = webSocket;
+        else
+            clients.add(webSocket);
+
         System.out.println(webSocket.getRemoteSocketAddress().getAddress().getHostAddress() + " connected!");
     }
 
     @Override
     public void onClose(WebSocket webSocket, int i, String s, boolean b)
     {
-        System.out.println(webSocket.getRemoteSocketAddress().getAddress().getHostAddress() + " disconnected!");
+        if(webSocket == webGLServer)
+        {
+            System.err.println("WebGL Server Disconnected");
+            webGLServer = null;
+            for(WebSocket ws : clients)
+                ws.close();
+
+            clients.clear();
+        }
+        else
+        {
+            clients.remove(webSocket);
+            System.out.println(webSocket.getRemoteSocketAddress().getAddress().getHostAddress() + " disconnected!");
+        }
     }
 
     @Override
     public void onMessage(WebSocket webSocket, String message)
     {
-        System.out.println(webSocket + ": " + message);
+        System.err.println(webSocket + ": " + message);
+
+        webGLServer.send(message);
     }
 
     @Override
     public void onMessage(WebSocket webSocket, ByteBuffer message)
     {
         System.out.println(webSocket + ": " + message);
+
+        webGLServer.send(message);
     }
 
     @Override
@@ -66,7 +88,7 @@ public class Server extends WebSocketServer
         System.out.println("Received fragment: " + fragment);
     }
 
-    public void sendToAll(String text) {
+    void sendToAll(String text) {
         Collection<WebSocket> con = connections();
         synchronized (con)
         {
@@ -77,7 +99,7 @@ public class Server extends WebSocketServer
         }
     }
 
-    public void sendToAll(ByteBuffer buffer) {
+    void sendToAll(ByteBuffer buffer) {
         Collection<WebSocket> con = connections();
         synchronized (con)
         {
